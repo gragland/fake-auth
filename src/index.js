@@ -6,12 +6,12 @@ const generateToken = () => String(Math.floor(Math.random() * 10000));
 export default {
   onChangeCallback: null,
 
-  signin: function(email, pass) {
+  signin: function(email, password) {
     return getAuthByEmail(email).then(auth => {
       // If user found then check password
       if (auth) {
         // If password match singin user otherwise throw error
-        if (auth.user.pass === pass) {
+        if (auth.user.password === password) {
           this.changeAuthToken(auth.token);
           return auth.user;
         } else {
@@ -27,7 +27,7 @@ export default {
     });
   },
 
-  signup: function(email, pass) {
+  signup: function(email, password) {
     return getAuthByEmail(email).then(auth => {
       // Throw error if email is already in use
       if (auth) {
@@ -38,7 +38,7 @@ export default {
       }
 
       // Create auth object
-      const newAuth = { token: generateToken(), user: { email, pass } };
+      const newAuth = { token: generateToken(), user: { email, password } };
       // Store auth object and signin user
       return addAuth(newAuth).then(() => {
         this.changeAuthToken(newAuth.token);
@@ -108,7 +108,7 @@ export default {
     });
   },
 
-  confirmPasswordReset: function(pass, code) {
+  confirmPasswordReset: function(password, code) {
     let resetCode;
     // If code was passed in
     if (code) {
@@ -120,7 +120,7 @@ export default {
       storeRemove("auth-pass-reset-code");
     }
 
-    return updateAuth(resetCode, { pass }).then(response => {
+    return updateAuth(resetCode, { password }).then(response => {
       if (response) {
         return true;
       } else {
