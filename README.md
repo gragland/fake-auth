@@ -1,9 +1,7 @@
 # 🔐 Fake Auth
-A fake auth service for prototyping authentication flows (signin, signup, forgot password, etc).
+A fake auth service for prototyping authentication flows and error states. It currently supports signin, signup, password resetting, changing passwords, and subscribing to auth state changes.
 
-Fake Auth keeps everything client-side, including the "database" which is kept in local storage.
-Perfect for quick prototyping and theme developers who'd like to have a demo site without needing to setup a backend
-or connect to a 3rd party auth service.
+Everything is client-side, including the "database" which is stored in local storage. Perfect for quick prototyping or theme developers who'd like to have a demo site without needing to setup a backend.
 
 # Install
 ```
@@ -44,9 +42,9 @@ function SigninComponent(props){
 
 # Methods
 
-- `signin(email: string, pass: string)`
-- `signup(email: string, pass: string)`
-- `signout`
-- `onChange(callback: function)`
-- `sendPasswordResetEmail(email: string)`
-- `confirmPasswordReset(email: string, code: string)`
+- `signin(email, pass).then((user) => ...)` 
+- `signup(email, pass).then((user) => ...)`
+- `signout().then(() => ...)`
+- `onChange((user) => ...)`
+- `sendPasswordResetEmail(email).then(() => ...)`
+- `confirmPasswordReset(email, code).then(() => ...)`
