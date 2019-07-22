@@ -3,8 +3,9 @@
   "version": "0.0.4",
   "description": "",
   "main": "dist/index.js",
+  "module": "dist/index.modern.mjs",
   "scripts": {
-    "build": "webpack --mode production",
+    "build": "microbundle -f cjs,modern",
     "prepare": "npm run build"
   },
   "repository": {
@@ -20,9 +21,6 @@
     "url": "https://github.com/gragland/fake-auth/issues"
   },
   "devDependencies": {
-    "@babel/core": "^7.5.4",
-    "babel-loader": "^8.0.6",
-    "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.6"
+    "microbundle": "^0.12.0-next.3"
   }
 }
