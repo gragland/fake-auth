@@ -184,8 +184,8 @@ const updateAuth = (token, userData = {}) => {
   });
 };
 
-// Initialize db with some data
-if (_getAll().length === 0) {
+// Initialize db with some data if client-side
+if (typeof window !== "undefined" && _getAll().length === 0) {
   _setAll([
     {
       user: {
