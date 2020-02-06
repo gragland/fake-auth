@@ -6,6 +6,26 @@ const generateToken = () => String(Math.floor(Math.random() * 10000));
 export default {
   onChangeCallback: null,
 
+  signup: function(email, password) {
+    return getAuthByEmail(email).then(auth => {
+      // Throw error if email is already in use
+      if (auth) {
+        throw new CustomError(
+          "auth/email-already-in-use",
+          "Email is already in use"
+        );
+      }
+
+      // Create auth object
+      const newAuth = { token: generateToken(), user: { email, password } };
+      // Store auth object and signin user
+      return addAuth(newAuth).then(() => {
+        this.changeAuthToken(newAuth.token);
+        return newAuth.user;
+      });
+    });
+  },
+
   signin: function(email, password) {
     return getAuthByEmail(email).then(auth => {
       // If user found then check password
@@ -27,23 +47,9 @@ export default {
     });
   },
 
-  signup: function(email, password) {
-    return getAuthByEmail(email).then(auth => {
-      // Throw error if email is already in use
-      if (auth) {
-        throw new CustomError(
-          "auth/email-already-in-use",
-          "Email is already in use"
-        );
-      }
-
-      // Create auth object
-      const newAuth = { token: generateToken(), user: { email, password } };
-      // Store auth object and signin user
-      return addAuth(newAuth).then(() => {
-        this.changeAuthToken(newAuth.token);
-        return newAuth.user;
-      });
+  signinWithProvider: function(provider) {
+    return getAuthByProvider(provider).then(auth => {
+      return auth.user;
     });
   },
 
@@ -182,6 +188,13 @@ const updateAuth = (token, userData = {}) => {
       return false;
     }
   });
+};
+
+const getAuthByProvider = provider => {
+  // Normally there would be an actual OAuth flow here that returns
+  // the user's email address and provider data.
+  const emailFromOauth = "demo@gmail.com";
+  return getAuthByEmail(emailFromOauth);
 };
 
 // Initialize db with some data if client-side
