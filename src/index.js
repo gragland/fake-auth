@@ -203,7 +203,7 @@ if (typeof window !== "undefined" && _getAll().length === 0) {
     {
       user: {
         email: "demo@gmail.com",
-        pass: "demo"
+        password: "demo"
       },
       token: "12345"
     }
