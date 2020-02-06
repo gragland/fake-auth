@@ -1,11 +1,12 @@
 {
   "name": "fake-auth",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "",
+  "source": "src/index.js",
   "main": "dist/index.js",
-  "module": "dist/index.modern.mjs",
+  "module": "dist/index.mjs",
   "scripts": {
-    "build": "microbundle -f cjs,modern",
+    "build": "microbundle",
     "prepare": "npm run build"
   },
   "repository": {
