@@ -1,6 +1,6 @@
 # 🔐 Fake Auth
 
-A fake auth service for prototyping authentication flows and error states. It currently supports signin, signup, password resetting, changing passwords, and subscribing to auth state changes.
+A fake auth service for prototyping authentication flows and error states. It currently supports signin, signup, signinWithProvider (google, fb, etc), password resetting, changing passwords, and subscribing to auth state changes.
 
 Everything is client-side, including the "database" which is stored in local storage. Perfect for quick prototyping or theme developers who'd like to have a demo site without needing to setup a backend.
 
