@@ -1,7 +1,13 @@
+import { Base64 } from "js-base64";
+
 // Delay to mimic slower network requests
 const RESPONSE_DELAY = 200;
-// Function to generate random user token
-const generateToken = () => String(Math.floor(Math.random() * 10000));
+// Can increment to prevent old storage data from being used
+const STORAGE_VERSION = "fa2";
+// Function to generate a fake JWT token
+const generateToken = data => Base64.encode(JSON.stringify(data));
+// Function to generate user uid
+const generateUid = () => String(Math.floor(Math.random() * 10000));
 
 export default {
   onChangeCallback: null,
@@ -17,11 +23,12 @@ export default {
       }
 
       // Create auth object
-      const newAuth = { token: generateToken(), user: { email, password } };
+      const user = { email, password };
+      const newAuth = { user, token: generateToken(user) };
       // Store auth object and signin user
       return addAuth(newAuth).then(() => {
-        this.changeAuthToken(newAuth.token);
-        return newAuth.user;
+        this.changeAccessToken(newAuth.token);
+        return newAuth;
       });
     });
   },
@@ -32,8 +39,8 @@ export default {
       if (auth) {
         // If password match singin user otherwise throw error
         if (auth.user.password === password) {
-          this.changeAuthToken(auth.token);
-          return auth.user;
+          this.changeAccessToken(auth.token);
+          return auth;
         } else {
           throw new CustomError("auth/wrong-password", "Password is wrong");
         }
@@ -49,40 +56,44 @@ export default {
 
   signinWithProvider: function(provider) {
     return getAuthByProvider(provider).then(auth => {
-      return auth.user;
+      this.changeAccessToken(auth.token);
+      return {
+        ...auth,
+        token: auth.token
+      };
     });
   },
 
   signout: async function() {
     // Signout user
-    this.changeAuthToken(null);
+    this.changeAccessToken(null);
     return Promise.resolve();
   },
 
   onChange: function(cb) {
-    // Store callback function so we can also call within ...
-    // ... setAuthToken(). Necessary because storage event listener ...
-    // ... only fires when local storage is changed by another tab.
+    // Store callback function so we can also call within
+    // setAccessToken(). Necessary because storage event listener
+    // only fires when local storage is changed by another tab.
     this.onChangeCallback = cb;
 
     const handleTokenChange = token => {
       getAuth(token).then(auth => {
-        this.onChangeCallback(auth ? auth.user : false);
+        this.onChangeCallback(auth || false);
       });
     };
 
     const listener = window.addEventListener(
       "storage",
       ({ key, newValue }) => {
-        if (key === "auth-token") {
+        if (key === "access-token") {
           handleTokenChange(JSON.parse(newValue));
         }
       },
       false
     );
 
-    const authToken = storeGet("auth-token");
-    handleTokenChange(authToken);
+    const accessToken = storeGet("access-token");
+    handleTokenChange(accessToken);
 
     // Return an unsubscribe function so consumer ...
     // ... can unsubscribe when needed.
@@ -126,8 +137,8 @@ export default {
       storeRemove("auth-pass-reset-code");
     }
 
-    return updateAuth(resetCode, { password }).then(response => {
-      if (response) {
+    return updateAuth(resetCode, { password }).then(updatedAuth => {
+      if (updatedAuth) {
         return true;
       } else {
         throw new CustomError(
@@ -138,16 +149,37 @@ export default {
     });
   },
 
-  // Updates auth token in storage and calls onChangeCallback()
-  changeAuthToken: function(authToken) {
-    storeSet("auth-token", authToken);
+  updateEmail: function(email) {
+    return updateAuthForCurrentUser({ email }).then(updatedAuth => {
+      return updatedAuth.user;
+    });
+  },
+
+  updatePassword: function(password) {
+    return updateAuthForCurrentUser({ password }).then(updatedAuth => {
+      return updatedAuth.user;
+    });
+  },
+
+  // Updates access token in storage and calls onChangeCallback()
+  changeAccessToken: function(accessToken) {
+    storeSet("access-token", accessToken);
     // If we have an onChangeCallback (set in this.onChange)
     if (this.onChangeCallback) {
-      // Fetch user via token and pass to callback
-      getAuth(authToken).then(auth => {
-        this.onChangeCallback(auth ? auth.user : false);
+      // Fetch user via accessToken and pass to callback
+      getAuth(accessToken).then(auth => {
+        this.onChangeCallback(auth || false);
       });
     }
+  },
+
+  getAccessToken: function() {
+    return storeGet("access-token");
+  },
+
+  // Used server-side to verify and decode access token
+  verifyAccessToken: function(accessToken) {
+    return JSON.parse(Base64.decode(accessToken));
   }
 };
 
@@ -165,11 +197,24 @@ const getAuthByEmail = email => {
 };
 
 const addAuth = auth => {
+  f;
   return delay(() => {
     const all = _getAll();
     all.push(auth);
     _setAll(all);
   });
+};
+
+const updateAuthForCurrentUser = userData => {
+  const accessToken = storeGet("access-token");
+  if (!accessToken) {
+    throw new CustomError(
+      "auth/not-signed-in",
+      `You must be signed in to perform this action`
+    );
+  }
+
+  return updateAuth(accessToken, userData);
 };
 
 const updateAuth = (token, userData = {}) => {
@@ -178,12 +223,16 @@ const updateAuth = (token, userData = {}) => {
     const index = all.findIndex(item => item.token === token);
 
     if (index !== -1) {
-      all[index].user = {
-        ...all[index].user,
-        ...userData
+      all[index] = {
+        ...all[index],
+        user: {
+          ...all[index].user,
+          ...userData
+        }
       };
+
       _setAll(all);
-      return true;
+      return all[index];
     } else {
       return false;
     }
@@ -193,36 +242,55 @@ const updateAuth = (token, userData = {}) => {
 const getAuthByProvider = provider => {
   // Normally there would be an actual OAuth flow here that returns
   // the user's email address and provider data.
+  // TODO: Don't rely on user being in storage
   const emailFromOauth = "demo@gmail.com";
-  return getAuthByEmail(emailFromOauth);
+  return getAuthByEmail(emailFromOauth).then(auth => {
+    return {
+      ...auth,
+      user: {
+        ...auth.user,
+        // Include provider in user object
+        // TODO: Persist this to storage
+        provider: provider
+      }
+    };
+  });
 };
 
 // Initialize db with some data if client-side
 if (typeof window !== "undefined" && _getAll().length === 0) {
-  _setAll([
+  const initialUser = {
+    uid: generateUid(),
+    email: "demo@gmail.com",
+    password: "demo"
+  };
+
+  const initialDb = [
     {
-      user: {
-        email: "demo@gmail.com",
-        password: "demo"
-      },
-      token: "12345"
+      user: initialUser,
+      token: generateToken(initialUser)
     }
-  ]);
+  ];
+
+  _setAll(initialDb);
 }
 
 /***** HELPERS *****/
 
 function storeGet(key, defaultValue = null) {
-  const value = window.localStorage.getItem(key);
+  const value = window.localStorage.getItem(`${key}-${STORAGE_VERSION}`);
   return value ? JSON.parse(value) : defaultValue;
 }
 
 function storeSet(key, value) {
-  window.localStorage.setItem(key, JSON.stringify(value));
+  window.localStorage.setItem(
+    `${key}-${STORAGE_VERSION}`,
+    JSON.stringify(value)
+  );
 }
 
 function storeRemove(key) {
-  window.localStorage.removeItem(key);
+  window.localStorage.removeItem(`${key}-${STORAGE_VERSION}`);
 }
 
 const delay = cb => {
