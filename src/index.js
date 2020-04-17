@@ -3,7 +3,7 @@ import { Base64 } from "js-base64";
 // Delay to mimic slower network requests
 const RESPONSE_DELAY = 200;
 // Can increment to prevent old storage data from being used
-const STORAGE_VERSION = "fa3";
+const STORAGE_VERSION = "fa5";
 // Function to generate a fake JWT token
 const generateToken = (data) => Base64.encode(JSON.stringify(data));
 // Function to generate user uid
@@ -23,7 +23,7 @@ export default {
       }
 
       // Create auth object
-      const user = { email, password };
+      const user = { uid: generateUid(), email, password };
       const newAuth = { user, token: generateToken(user) };
       // Store auth object and signin user
       return addAuth(newAuth).then(() => {
