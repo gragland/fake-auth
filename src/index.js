@@ -3,17 +3,17 @@ import { Base64 } from "js-base64";
 // Delay to mimic slower network requests
 const RESPONSE_DELAY = 200;
 // Can increment to prevent old storage data from being used
-const STORAGE_VERSION = "fa2";
+const STORAGE_VERSION = "fa3";
 // Function to generate a fake JWT token
-const generateToken = data => Base64.encode(JSON.stringify(data));
+const generateToken = (data) => Base64.encode(JSON.stringify(data));
 // Function to generate user uid
 const generateUid = () => String(Math.floor(Math.random() * 10000));
 
 export default {
   onChangeCallback: null,
 
-  signup: function(email, password) {
-    return getAuthByEmail(email).then(auth => {
+  signup: function (email, password) {
+    return getAuthByEmail(email).then((auth) => {
       // Throw error if email is already in use
       if (auth) {
         throw new CustomError(
@@ -33,8 +33,8 @@ export default {
     });
   },
 
-  signin: function(email, password) {
-    return getAuthByEmail(email).then(auth => {
+  signin: function (email, password) {
+    return getAuthByEmail(email).then((auth) => {
       // If user found then check password
       if (auth) {
         // If password match singin user otherwise throw error
@@ -54,30 +54,30 @@ export default {
     });
   },
 
-  signinWithProvider: function(provider) {
-    return getAuthByProvider(provider).then(auth => {
+  signinWithProvider: function (provider) {
+    return getAuthByProvider(provider).then((auth) => {
       this.changeAccessToken(auth.token);
       return {
         ...auth,
-        token: auth.token
+        token: auth.token,
       };
     });
   },
 
-  signout: async function() {
+  signout: async function () {
     // Signout user
     this.changeAccessToken(null);
     return Promise.resolve();
   },
 
-  onChange: function(cb) {
+  onChange: function (cb) {
     // Store callback function so we can also call within
     // setAccessToken(). Necessary because storage event listener
     // only fires when local storage is changed by another tab.
     this.onChangeCallback = cb;
 
-    const handleTokenChange = token => {
-      getAuth(token).then(auth => {
+    const handleTokenChange = (token) => {
+      getAuth(token).then((auth) => {
         this.onChangeCallback(auth || false);
       });
     };
@@ -102,13 +102,13 @@ export default {
     };
   },
 
-  sendPasswordResetEmail: function(email) {
+  sendPasswordResetEmail: function (email) {
     // Get the user token for the email address and use as password reset code.
     // A real auth service would do this server-side and email ...
     // ... the code to the provided email address.
     // For testing we save the reset code to local storage and ...
     // ... read in subsequent confirmPasswordReset() call.
-    return getAuthByEmail(email).then(auth => {
+    return getAuthByEmail(email).then((auth) => {
       if (auth) {
         storeSet("auth-pass-reset-code", auth.token);
         console.log("Your one-time use password reset code:", auth.token);
@@ -125,7 +125,7 @@ export default {
     });
   },
 
-  confirmPasswordReset: function(password, code) {
+  confirmPasswordReset: function (password, code) {
     let resetCode;
     // If code was passed in
     if (code) {
@@ -137,7 +137,7 @@ export default {
       storeRemove("auth-pass-reset-code");
     }
 
-    return updateAuth(resetCode, { password }).then(updatedAuth => {
+    return updateAuth(resetCode, { password }).then((updatedAuth) => {
       if (updatedAuth) {
         return true;
       } else {
@@ -149,55 +149,54 @@ export default {
     });
   },
 
-  updateEmail: function(email) {
-    return updateAuthForCurrentUser({ email }).then(updatedAuth => {
+  updateEmail: function (email) {
+    return updateAuthForCurrentUser({ email }).then((updatedAuth) => {
       return updatedAuth.user;
     });
   },
 
-  updatePassword: function(password) {
-    return updateAuthForCurrentUser({ password }).then(updatedAuth => {
+  updatePassword: function (password) {
+    return updateAuthForCurrentUser({ password }).then((updatedAuth) => {
       return updatedAuth.user;
     });
   },
 
   // Updates access token in storage and calls onChangeCallback()
-  changeAccessToken: function(accessToken) {
+  changeAccessToken: function (accessToken) {
     storeSet("access-token", accessToken);
     // If we have an onChangeCallback (set in this.onChange)
     if (this.onChangeCallback) {
       // Fetch user via accessToken and pass to callback
-      getAuth(accessToken).then(auth => {
+      getAuth(accessToken).then((auth) => {
         this.onChangeCallback(auth || false);
       });
     }
   },
 
-  getAccessToken: function() {
+  getAccessToken: function () {
     return storeGet("access-token");
   },
 
   // Used server-side to verify and decode access token
-  verifyAccessToken: function(accessToken) {
+  verifyAccessToken: function (accessToken) {
     return JSON.parse(Base64.decode(accessToken));
-  }
+  },
 };
 
 /***** LOCAL DB *****/
 
 const _getAll = () => storeGet("auth-db", []);
-const _setAll = db => storeSet("auth-db", db);
+const _setAll = (db) => storeSet("auth-db", db);
 
-const getAuth = token => {
-  return delay(() => _getAll().find(item => item.token === token));
+const getAuth = (token) => {
+  return delay(() => _getAll().find((item) => item.token === token));
 };
 
-const getAuthByEmail = email => {
-  return delay(() => _getAll().find(item => item.user.email === email));
+const getAuthByEmail = (email) => {
+  return delay(() => _getAll().find((item) => item.user.email === email));
 };
 
-const addAuth = auth => {
-  f;
+const addAuth = (auth) => {
   return delay(() => {
     const all = _getAll();
     all.push(auth);
@@ -205,7 +204,7 @@ const addAuth = auth => {
   });
 };
 
-const updateAuthForCurrentUser = userData => {
+const updateAuthForCurrentUser = (userData) => {
   const accessToken = storeGet("access-token");
   if (!accessToken) {
     throw new CustomError(
@@ -220,15 +219,15 @@ const updateAuthForCurrentUser = userData => {
 const updateAuth = (token, userData = {}) => {
   return delay(() => {
     const all = _getAll();
-    const index = all.findIndex(item => item.token === token);
+    const index = all.findIndex((item) => item.token === token);
 
     if (index !== -1) {
       all[index] = {
         ...all[index],
         user: {
           ...all[index].user,
-          ...userData
-        }
+          ...userData,
+        },
       };
 
       _setAll(all);
@@ -239,20 +238,20 @@ const updateAuth = (token, userData = {}) => {
   });
 };
 
-const getAuthByProvider = provider => {
+const getAuthByProvider = (provider) => {
   // Normally there would be an actual OAuth flow here that returns
   // the user's email address and provider data.
   // TODO: Don't rely on user being in storage
   const emailFromOauth = "demo@gmail.com";
-  return getAuthByEmail(emailFromOauth).then(auth => {
+  return getAuthByEmail(emailFromOauth).then((auth) => {
     return {
       ...auth,
       user: {
         ...auth.user,
         // Include provider in user object
         // TODO: Persist this to storage
-        provider: provider
-      }
+        provider: provider,
+      },
     };
   });
 };
@@ -262,14 +261,14 @@ if (typeof window !== "undefined" && _getAll().length === 0) {
   const initialUser = {
     uid: generateUid(),
     email: "demo@gmail.com",
-    password: "demo"
+    password: "demo",
   };
 
   const initialDb = [
     {
       user: initialUser,
-      token: generateToken(initialUser)
-    }
+      token: generateToken(initialUser),
+    },
   ];
 
   _setAll(initialDb);
@@ -293,8 +292,8 @@ function storeRemove(key) {
   window.localStorage.removeItem(`${key}-${STORAGE_VERSION}`);
 }
 
-const delay = cb => {
-  return new Promise(resolve =>
+const delay = (cb) => {
+  return new Promise((resolve) =>
     setTimeout(() => {
       resolve(cb());
     }, RESPONSE_DELAY)
