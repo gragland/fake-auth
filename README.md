@@ -1,6 +1,6 @@
 # 🔐 Fake Auth
 
-A fake auth service for prototyping authentication flows and error states. It currently supports signin, signup, signinWithProvider (google, fb, etc), password resetting, updating email, and subscribing to auth state changes.
+A fake auth service for prototyping authentication flows and error states. It currently supports signin, signup, signinWithProvider (google, fb, etc), password resetting, updating email, updating profile data, and subscribing to auth state changes.
 
 Everything is client-side, including the "database" which is stored in local storage. Perfect for quick prototyping or theme developers who'd like to have a demo site without needing to setup a backend.
 
@@ -24,17 +24,17 @@ function SigninComponent(props) {
   const handleSubmit = (email, pass) => {
     fakeAuth
       .signin(email, pass)
-      .then(user => {
-        props.onSignin(user);
+      .then((response) => {
+        props.onSignin(response.user);
       })
-      .catch(error => {
+      .catch((error) => {
         setError(error);
       });
   };
 
   return (
     <form
-      onSubmit={event => {
+      onSubmit={(event) => {
         const [email, pass] = event.target.children;
         handleSubmit(email, pass);
       }}
@@ -49,12 +49,14 @@ function SigninComponent(props) {
 
 # Methods
 
-- `signup(email, pass).then((user) => ...)`
-- `signin(email, pass).then((user) => ...)`
-- `signinWithProvider(provider).then((user) => ...)`
+- `signup(email, pass).then((response) => ...)`
+- `signin(email, pass).then((response) => ...)`
+- `signinWithProvider(provider).then((response) => ...)`
 - `signout().then(() => ...)`
-- `onChange((user) => ...)`
+- `onChange((response) => ...)`
 - `sendPasswordResetEmail(email).then(() => ...)`
 - `confirmPasswordReset(email, code).then(() => ...)`
 - `updateEmail(email).then(() => ...)`
 - `updatePassword(pass).then(() => ...)`
+- `updateProfile(data).then(() => ...)`
+- `getCurrentUser().then((user) => ...)`

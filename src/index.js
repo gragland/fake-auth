@@ -12,6 +12,11 @@ const generateUid = () => String(Math.floor(Math.random() * 10000));
 export default {
   onChangeCallback: null,
 
+  getCurrentUser: function () {
+    const token = storeGet("access-token");
+    return getAuth(token).then((auth) => auth.user);
+  },
+
   signup: function (email, password) {
     return getAuthByEmail(email).then((auth) => {
       // Throw error if email is already in use
@@ -95,8 +100,8 @@ export default {
     const accessToken = storeGet("access-token");
     handleTokenChange(accessToken);
 
-    // Return an unsubscribe function so consumer ...
-    // ... can unsubscribe when needed.
+    // Return an unsubscribe function so consumer
+    // can unsubscribe when needed.
     return () => {
       window.removeEventListener("storage", listener);
     };
@@ -104,10 +109,10 @@ export default {
 
   sendPasswordResetEmail: function (email) {
     // Get the user token for the email address and use as password reset code.
-    // A real auth service would do this server-side and email ...
-    // ... the code to the provided email address.
-    // For testing we save the reset code to local storage and ...
-    // ... read in subsequent confirmPasswordReset() call.
+    // A real auth service would do this server-side and email
+    // the code to the provided email address.
+    // For testing we save the reset code to local storage and
+    // read in subsequent confirmPasswordReset() call.
     return getAuthByEmail(email).then((auth) => {
       if (auth) {
         storeSet("auth-pass-reset-code", auth.token);
@@ -157,6 +162,12 @@ export default {
 
   updatePassword: function (password) {
     return updateAuthForCurrentUser({ password }).then((updatedAuth) => {
+      return updatedAuth.user;
+    });
+  },
+
+  updateProfile: function (data) {
+    return updateAuthForCurrentUser(data).then((updatedAuth) => {
       return updatedAuth.user;
     });
   },
