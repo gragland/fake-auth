@@ -62,10 +62,7 @@ export default {
   signinWithProvider: function (provider) {
     return getAuthByProvider(provider).then((auth) => {
       this.changeAccessToken(auth.token);
-      return {
-        ...auth,
-        token: auth.token,
-      };
+      return auth;
     });
   },
 
@@ -204,7 +201,11 @@ const getAuth = (token) => {
 };
 
 const getAuthByEmail = (email) => {
-  return delay(() => _getAll().find((item) => item.user.email === email));
+  return delay(() =>
+    _getAll().find((item) => {
+      return item.user.email === email;
+    })
+  );
 };
 
 const addAuth = (auth) => {
@@ -252,8 +253,10 @@ const updateAuth = (token, userData = {}) => {
 const getAuthByProvider = (provider) => {
   // Normally there would be an actual OAuth flow here that returns
   // the user's email address and provider data.
-  // TODO: Don't rely on user being in storage
   const emailFromOauth = "demo@gmail.com";
+  // First ensure user with above email exists in db
+  initializeDb();
+
   return getAuthByEmail(emailFromOauth).then((auth) => {
     return {
       ...auth,
@@ -266,24 +269,6 @@ const getAuthByProvider = (provider) => {
     };
   });
 };
-
-// Initialize db with some data if client-side
-if (typeof window !== "undefined" && _getAll().length === 0) {
-  const initialUser = {
-    uid: generateUid(),
-    email: "demo@gmail.com",
-    password: "demo",
-  };
-
-  const initialDb = [
-    {
-      user: initialUser,
-      token: generateToken(initialUser),
-    },
-  ];
-
-  _setAll(initialDb);
-}
 
 /***** HELPERS *****/
 
@@ -318,3 +303,37 @@ function CustomError(code, message) {
 }
 
 CustomError.prototype = Object.create(Error.prototype);
+
+/***** INITIALIZE *****/
+
+const initialUser = {
+  uid: generateUid(),
+  email: "demo@gmail.com",
+  password: "demo",
+};
+
+const initialAuth = {
+  user: initialUser,
+  token: generateToken(initialUser),
+};
+
+function initializeDb() {
+  // See if initialUser is in db
+  // _getAll() will return an empty array if db is not in local storage yet
+  const found = _getAll().find((item) => {
+    return item.user.email === initialUser.email;
+  });
+
+  // If initialUser not in db then add them
+  // This will create the db in local storage if it previously didn't exist
+  if (!found) {
+    const all = _getAll();
+    all.push(initialAuth);
+    _setAll(all);
+  }
+}
+
+// Initialize db if client-side
+if (typeof window !== "undefined") {
+  initializeDb();
+}
